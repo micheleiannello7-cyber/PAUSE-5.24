@@ -21,14 +21,23 @@ import { READER_MAX_W } from "./reader-section";
 
 export type IntroRect = { x: number; y: number; width: number; height: number };
 
-// Copertina: larga quanto la colonna di lettura meno i margini; alta fino a
-// poco più di un quadrato, ma mai oltre metà pagina (deve restare spazio per
-// titolo e prologo nella prima schermata).
-export function introCoverSize(winW: number, pageH: number) {
-  const columnW = Math.min(winW, READER_MAX_W);
-  const width = columnW - spacing.xl * 2;
-  const height = Math.max(180, Math.min(Math.round(width * 1.06), Math.round(pageH * 0.5)));
-  return { width, height, left: (winW - columnW) / 2 + spacing.xl };
+/** Cornice della grande copertina dell'apertura (livello fisso dietro allo scroll). */
+export type CoverFrame = {
+  top: number; left: number; width: number; height: number; radius: number;
+  /** Spazio che l'apertura riserva alla copertina prima del titolo: il titolo entra nella dissolvenza in basso. */
+  reserve: number;
+};
+
+// Quanto il titolo sale dentro la zona in cui la copertina sfuma nell'atmosfera.
+const COVER_OVERLAP = 96;
+
+// Copertina: a tutta larghezza dall'alto dello schermo (dietro la barra), alta
+// poco più di metà pagina ma mai oltre 1,25 volte la larghezza; in basso sfuma
+// nell'atmosfera e il titolo comincia dentro quella dissolvenza. Deve restare
+// spazio per titolo e prologo nella prima schermata.
+export function readerCoverFrame(winW: number, pageH: number): CoverFrame {
+  const height = Math.max(300, Math.min(Math.round(pageH * 0.6), Math.round(winW * 1.25)));
+  return { top: 0, left: 0, width: winW, height, radius: 0, reserve: height - COVER_OVERLAP };
 }
 
 export function ReaderIntro({

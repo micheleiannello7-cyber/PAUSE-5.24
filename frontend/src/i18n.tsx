@@ -13,7 +13,7 @@ const it = {
   // tabs
   tab_home: "Home", tab_explore: "Argomenti", tab_saved: "Salvati", tab_profile: "Profilo",
   // onboarding
-  onb_title: "Cosa ti incuriosisce\ndavvero?",
+  onb_title: "Cosa ti incuriosisce davvero?",
   onb_subtitle: "Scegli i tuoi interessi. Ti proporremo storie brevi e intelligenti, non un feed infinito.",
   onb_cta: "Inizia a scoprire",
   tagline: "UNA PAUSA. MILLE SCOPERTE.",
@@ -67,7 +67,7 @@ const it = {
   onb_need_mode_t: "Scegli almeno un formato", onb_need_mode_b: "Curiosità, Mini lezioni o entrambi: così sappiamo cosa proporti.",
   onb_need_topic_t: "Scegli almeno un argomento", onb_need_topic_b: "Ci serve per proporti contenuti su misura. Puoi anche scegliere «Qualsiasi argomento».",
   onb_topics_hint: "Scegli gli argomenti che ti appassionano di più: ti proporremo {formats} su misura per te.",
-  onb_topics_change_t: "Nessuna scelta è definitiva", onb_topics_change_b: "Puoi cambiare argomenti e formati in qualsiasi momento dalla scheda Argomenti dell'app.",
+  onb_topics_change_t: "Nessuna scelta è definitiva", onb_topics_change_b: "Puoi cambiare argomenti e formati quando vuoi dalla scheda Argomenti.",
   onb_formats_stories: "curiosità", onb_formats_lessons: "mini lezioni", onb_formats_both: "curiosità e mini lezioni",
   lessons_n: "lezioni", items_n: "contenuti",
   // categories
@@ -291,7 +291,7 @@ const it = {
 
 const en: typeof it = {
   tab_home: "Home", tab_explore: "Topics", tab_saved: "Saved", tab_profile: "Profile",
-  onb_title: "What truly\nsparks your curiosity?",
+  onb_title: "What truly sparks your curiosity?",
   onb_subtitle: "Pick your interests. We'll serve short, smart stories — not an endless feed.",
   onb_cta: "Start discovering",
   tagline: "ONE PAUSE. A THOUSAND DISCOVERIES.",
@@ -343,7 +343,7 @@ const en: typeof it = {
   onb_need_mode_t: "Pick at least one format", onb_need_mode_b: "Curiosities, Mini lessons or both: that's how we know what to suggest.",
   onb_need_topic_t: "Pick at least one topic", onb_need_topic_b: "We need it to tailor your content. You can also choose “Any topic”.",
   onb_topics_hint: "Pick the topics you love most: we'll suggest {formats} tailored to you.",
-  onb_topics_change_t: "Nothing is set in stone", onb_topics_change_b: "You can change topics and formats anytime from the Topics tab in the app.",
+  onb_topics_change_t: "Nothing is set in stone", onb_topics_change_b: "You can change topics and formats anytime from the Topics tab.",
   onb_formats_stories: "curiosities", onb_formats_lessons: "mini lessons", onb_formats_both: "curiosities and mini lessons",
   lessons_n: "lessons", items_n: "items",
   any_topic: "Any topic", any_topic_sub: "Let everything surprise you",

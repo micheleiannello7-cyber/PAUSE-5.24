@@ -293,3 +293,21 @@ pre-generati (storie, capitoli, copertine, audio TTS) distribuiti dal backend.
 - P2 cosmetico (facoltativo): migrare `textShadow*`→`textShadow` e `props.pointerEvents`→
   `style.pointerEvents` per silenziare warning RN Web (non bloccanti).
 
+
+## Sfondo atmosferico lettura + copertina full-bleed (giugno 2026, fork)
+Solo presentazione (nessuna modifica backend/contenuti):
+- `theme.ts`: ogni accento ha `atmosphere { base, tint, secondary, glow, frame }` → `colors.atmosBase/atmosTint/atmosSecondary/atmosGlow/atmosFrame`. Un solo sistema generativo (PNG radiale tinto + gradienti), nuovi temi = solo colori.
+- `reader-atmosphere.tsx`: fondo quasi nero + 6 luci morbide agli angoli/bordi nel colore del tema, centro protetto; respiro lentissimo (solo transform, fermo su web / riduci movimento).
+- `reader-cover-backdrop.tsx`: copertina a tutta larghezza da top 0 che sfuma nell'atmosfera (`CoverNightSkin`), fascia di raccordo `CoverSeam`; con lo scroll parallasse 0.28, si scurisce e resta traccia (0.4). Condivisa con `story-morph`.
+- `reader-intro.tsx`: `readerCoverFrame(winW, pageH)` → cornice + `reserve` (titolo entra nella dissolvenza).
+- `reader-header.tsx`: titolo compatto visibile solo dal capitolo 1.
+- `reader-section.tsx`: occhiello solo "CAPITOLO"; capitolo successivo mostra solo numero+titolo attenuati, paragrafo appare quando ci si arriva (`ChapterReveal`).
+- `reader-frame.tsx`: cornice con `atmosFrame` + alone cyan interno.
+- Test: iteration_2.json 8/8 PASS (apertura, header, reveal, 6 capitoli, morph Home→lettore, 5 accenti, tema chiaro).
+
+## Anteprima temi, fix transizione, Argomenti compatti, tessere Home (giugno 2026, fork)
+- Profilo → colore accento: `atmosphere-preview.tsx` (mini-lettore con base/tint/secondary/frame + brand del tema), 5 in una riga con nome.
+- Fix morph Home→lettura: `story-morph.tsx` monta il lettore solo a fine animazione (rimosso COMMIT_AT); l'overlay mostra la schermata finale identica finché il lettore è pronto, poi dissolve.
+- Argomenti/onboarding (`topic-picker.tsx`): titolo su una riga (font da larghezza misurata), nota "Nessuna scelta è definitiva" integrata nel riquadro hint; footer rimosso. i18n onb_title senza a capo.
+- Home (`home-controls.tsx`): tessere categoria con vetro + `CategoryTileEdge active` come in Argomenti.
+- Test: iteration_3.json 4/4 PASS.

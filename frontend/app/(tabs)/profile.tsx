@@ -8,6 +8,10 @@ import { useRouter } from "expo-router";
 
 import { api } from "@/src/api";
 import { spacing, radius, typography, ACCENTS, useTheme, ThemeMode, AccentId, makeStyles, withAlpha } from "@/src/theme";
+import { AtmospherePreview } from "@/src/components/atmosphere-preview";
+
+// Mini-anteprime dell'atmosfera di lettura nel selettore del colore accento.
+const ACCENT_PREVIEW_W = 44, ACCENT_PREVIEW_H = 66;
 import { useUserId } from "@/src/session";
 import { usePremium, PLANS } from "@/src/premium";
 import { savePrefs } from "@/src/prefs-sync";
@@ -207,35 +211,35 @@ export default function Profile() {
           </View>
           <View style={styles.accentRow}>
             {ACCENTS.map((a) => {
-              const swatch = a[scheme].gradient;
               const active = accent === a.id;
               const locked = !isPremium;
               return (
                 <Pressable
                   key={a.id}
                   testID={`accent-${a.id}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={t[`accent_${a.id}` as keyof typeof t] as string}
                   onPress={() => {
                     if (locked) return router.push("/premium");
                     changeAccent(a.id);
                   }}
-                  style={[
-                    styles.accentSwatch,
-                    { borderColor: active ? colors.onSurface : "transparent" },
-                    locked && !active && { opacity: 0.55 },
-                  ]}
+                  style={[styles.accentTile, locked && !active && { opacity: 0.6 }]}
                 >
-                  <LinearGradient
-                    colors={swatch}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.accentSwatchInner}
-                  >
+                  {/* Mini-anteprima dell'atmosfera di lettura con questo tema. */}
+                  <View style={[styles.accentPreview, { borderColor: active ? colors.onSurface : "transparent" }]}>
+                    <AtmospherePreview accent={a} scheme={scheme} width={ACCENT_PREVIEW_W} height={ACCENT_PREVIEW_H} />
                     {active ? (
-                      <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+                      <View style={[styles.accentMark, { backgroundColor: a[scheme].brand }]}>
+                        <Ionicons name="checkmark" size={12} color={colors.onBrand} />
+                      </View>
                     ) : locked ? (
-                      <Ionicons name="lock-closed" size={12} color="rgba(255,255,255,0.9)" />
+                      <View style={[styles.accentMark, { backgroundColor: colors.overlay }]}>
+                        <Ionicons name="lock-closed" size={10} color={colors.onSurface} />
+                      </View>
                     ) : null}
-                  </LinearGradient>
+                  </View>
+                  <Text style={[styles.accentName, active && { color: colors.onSurface }]} numberOfLines={1}>{t[`accent_${a.id}` as keyof typeof t] as string}</Text>
                 </Pressable>
               );
             })}
@@ -406,11 +410,12 @@ const useStyles = makeStyles((colors) => ({
   premiumSub: { color: colors.onSurfaceTertiary, fontFamily: typography.body, fontSize: 12, marginTop: 3, lineHeight: 17 },
   premiumBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: colors.success + "22" },
   premiumBadgeText: { color: colors.success, fontFamily: typography.bodyBold, fontSize: 10, letterSpacing: 1 },
-  accentRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.xs, paddingLeft: 32 },
-  accentSwatch: {
-    width: 40, height: 40, borderRadius: 20, padding: 3, borderWidth: 2,
+  accentRow: { flexDirection: "row", gap: spacing.xs, marginTop: spacing.xs, justifyContent: "space-between" },
+  accentTile: { alignItems: "center", gap: 6, flexShrink: 1 },
+  accentPreview: { borderRadius: 15, borderWidth: 2, padding: 2 },
+  accentMark: {
+    position: "absolute", right: 5, top: 5, width: 18, height: 18, borderRadius: 9,
+    alignItems: "center", justifyContent: "center",
   },
-  accentSwatchInner: {
-    flex: 1, borderRadius: 16, alignItems: "center", justifyContent: "center",
-  },
+  accentName: { color: colors.onSurfaceTertiary, fontFamily: typography.bodyMedium, fontSize: 11 },
 }));

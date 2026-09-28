@@ -1,4 +1,5 @@
-import { Pressable, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Category } from "@/src/api";
 import { makeStyles, radius, typography, useTheme, categoryTilePalette as palette } from "@/src/theme";
 import { DirectionIcon } from "./category-icon";
@@ -22,12 +23,14 @@ export function HomeCategoryTile({ cat, active, onPress, size, iconUri }: {
       style={({ pressed }) => [styles.tile, { width: size, height: Math.round(size * 1.32) },
         pressed && styles.pressed]}
     >
+      {/* Stesso vetro e stessa luce di selezione delle tessere della schermata Argomenti. */}
+      <LinearGradient colors={[palette.top, palette.surface]} style={StyleSheet.absoluteFill} pointerEvents="none" />
       <CategoryArtwork category={cat} testID={`home-category-art-${cat.id}`} compact reference cornerRadius={radius.md} uriOverride={iconUri} />
       <View style={styles.tileNameWrap}>
         <Text testID={`home-cat-label-${cat.id}`} style={styles.tileName} numberOfLines={2}>{cat.name}</Text>
       </View>
       <CategorySelectionLight id={`home-${cat.id}`} color={color} active={active} />
-      <CategoryTileEdge color={color} rounded={radius.md} />
+      <CategoryTileEdge color={color} rounded={radius.md} active={active} />
     </Pressable>
   );
 }

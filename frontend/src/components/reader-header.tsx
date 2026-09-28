@@ -8,7 +8,7 @@ import { ReactNode } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "@react-native-vector-icons/ionicons";
-import Animated, { SharedValue, useAnimatedStyle } from "react-native-reanimated";
+import Animated, { SharedValue, useAnimatedStyle, useDerivedValue, withTiming } from "react-native-reanimated";
 
 import { makeStyles, useTheme, spacing, typography, withAlpha } from "@/src/theme";
 import { HighlightedTitle } from "@/src/components/highlighted-title";
@@ -40,6 +40,9 @@ export function ReaderHeader({ topInset, title, highlight, current, total, solid
   const inChapters = current > 0;
   const shown = Math.min(Math.max(current, 0), total);
   const label = inChapters ? `${pad(shown)} / ${pad(total)}` : "";
+  // Il titolo compatto compare solo dal primo capitolo: sull'apertura la barra resta pulita.
+  const titleIn = useDerivedValue(() => withTiming(inChapters ? 1 : 0, { duration: 280 }), [inChapters]);
+  const titleFade = useAnimatedStyle(() => ({ opacity: titleIn.value, transform: [{ translateY: (1 - titleIn.value) * 6 }] }));
 
   return (
     <View style={[styles.wrap, { paddingTop: topInset }]} testID="reader-header">
@@ -52,9 +55,9 @@ export function ReaderHeader({ topInset, title, highlight, current, total, solid
         <Pressable onPress={onBack} hitSlop={10} style={styles.back} accessibilityRole="button" accessibilityLabel="Back" testID="reader-back">
           <Ionicons name="chevron-back" size={24} color={colors.textWarm} />
         </Pressable>
-        <View style={styles.copy}>
+        <Animated.View style={[styles.copy, titleFade]} pointerEvents="none">
           <HighlightedTitle title={title} highlight={highlight} style={[styles.title, titleSize]} numberOfLines={2} testID="reader-header-title" />
-        </View>
+        </Animated.View>
         <View style={styles.right}>
           {corner ? corner : (
             <Text style={[styles.label, !inChapters && styles.labelHidden]} numberOfLines={1} testID="deep-dive-page-label">

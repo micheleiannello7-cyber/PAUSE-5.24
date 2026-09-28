@@ -17,11 +17,11 @@ import { useUserId } from "@/src/session";
 import { useStoryActions } from "@/src/hooks/use-story-actions";
 import { saveReadingProgress, clearReadingProgress, getReadingProgress, toStoryPreview } from "@/src/reading-progress";
 import { SwipeBack } from "@/src/components/swipe-back";
-import { ReaderCoverBackdrop, CoverFrame } from "@/src/components/reader-cover-backdrop";
+import { ReaderCoverBackdrop } from "@/src/components/reader-cover-backdrop";
 import { ReaderEndingBackdrop } from "@/src/components/reader-ending-backdrop";
 import { ReaderAtmosphere } from "@/src/components/reader-atmosphere";
 import { ReaderFrame } from "@/src/components/reader-frame";
-import { ReaderIntro, introCoverSize } from "@/src/components/reader-intro";
+import { ReaderIntro, readerCoverFrame } from "@/src/components/reader-intro";
 import { StoryAudioProvider, AudioSheet, AudioMiniBadge, IntroListenButton } from "@/src/components/story-audio-player";
 import { ReaderHeader, READER_HEADER_H } from "@/src/components/reader-header";
 import { ChapterSection, SectionDivider } from "@/src/components/reader-section";
@@ -115,12 +115,10 @@ export default function DeepDive() {
   // Altezza reale dello ScrollView, misurata a layout.
   const [pageH, setPageH] = useState(winH);
   const pageHSV = useSharedValue(winH);
-  // Grande copertina dell'apertura: sotto la barra, staccata dai bordi. Lo
-  // stesso livello fisso dietro allo scroll (ReaderCoverBackdrop) ha questa
-  // geometria ed esce verso l'alto, scurendosi, con lo scroll.
-  const coverTop = headerBottom + spacing.sm;
-  const size = introCoverSize(winW, pageH);
-  const cover: CoverFrame = { top: coverTop, left: size.left, width: size.width, height: size.height, radius: 26 };
+  // Grande copertina dell'apertura: a tutta larghezza dall'alto (dietro la
+  // barra), sfuma in basso nell'atmosfera. Lo stesso livello fisso dietro allo
+  // scroll (ReaderCoverBackdrop) ha questa geometria e resta come traccia scura.
+  const cover = readerCoverFrame(winW, pageH);
   const [introMeasured, setIntroMeasured] = useState(false);
   // Arrivo dalla card della Home: dopo il primo layout dell'apertura la
   // geometria è quella definitiva ed è stata disegnata → il livello di
@@ -132,7 +130,7 @@ export default function DeepDive() {
     return () => clearTimeout(timer);
   }, [morph, introMeasured, cover.height, morphHost.markReady]);
   // Quota (nello scroll) del titolo grande: da qui in su la barra resta pulita.
-  const bigTitleY = coverTop + cover.height + spacing.lg;
+  const bigTitleY = cover.top + cover.reserve + spacing.lg;
   const bigTitleSV = useSharedValue(bigTitleY);
   useEffect(() => { bigTitleSV.value = bigTitleY; }, [bigTitleY, bigTitleSV]);
   // Ultimo scroll programmatico (apertura su un capitolo, ripresa): solo un
@@ -332,8 +330,8 @@ export default function DeepDive() {
     <Screen style={styles.container} animated={morph !== "1"}>
       <SwipeBack onBack={goBack} onRelease={morphBack}>
       {/* Atmosfera: fondo notte + traccia sfocata della copertina che si attenua nei capitoli. */}
-      <ReaderAtmosphere story={story} scrollY={scrollY} fadeOver={pageH * 0.9} />
-      {/* Grande copertina dell'apertura: esce verso l'alto e si dissolve con lo scroll. */}
+      <ReaderAtmosphere scrollY={scrollY} fadeOver={pageH * 0.9} />
+      {/* Grande copertina dell'apertura: sale appena e resta una traccia scura con lo scroll. */}
       <ReaderCoverBackdrop story={story} scrollY={scrollY} frame={cover} instant={morph === "1"} />
       {/* Schermata finale: sfondo cinematico dell'onboarding, compare solo in fondo. */}
       <ReaderEndingBackdrop scrollY={scrollY} pageH={pageHSV} endTop={endTopSV} />
@@ -355,7 +353,7 @@ export default function DeepDive() {
           scrollEventThrottle={16}
           onScrollBeginDrag={markTouched}
           onLayout={onScrollLayout}
-          contentContainerStyle={{ paddingTop: coverTop }}
+          contentContainerStyle={{ paddingTop: cover.top }}
           showsVerticalScrollIndicator={false}
           style={styles.scroll}
           testID="deep-dive-scroll"
@@ -363,14 +361,15 @@ export default function DeepDive() {
           {/* Apertura (sezione 0): spazio per la copertina (l'immagine vera è il
               livello fisso dietro), titolo, tre dati, introduzione e l'invito a
               scorrere in fondo alla prima schermata. */}
-          <ReaderIntro story={story} coverH={cover.height} minHeight={pageH - coverTop} bottomInset={insets.bottom} reveal={headerReveal}
+          <ReaderIntro story={story} coverH={cover.reserve} minHeight={pageH - cover.top} bottomInset={insets.bottom} reveal={headerReveal}
             listen={isPremium ? <IntroListenButton onListen={openAudio} style={styles.listen} /> : null}
             onLayout={() => setIntroMeasured(true)} />
 
           {story.chapters.map((c, i) => (
             <View key={c.number} onLayout={(e) => onSectionLayout(i, e)} testID={`deep-dive-page-chapter-${c.number}`}>
               {i > 0 ? <SectionDivider color={colors.brand} /> : null}
-              <ChapterSection chapter={c} story={story} eyebrow={`${t.chapter} ${c.number}`} />
+              <ChapterSection chapter={c} story={story} eyebrow={t.chapter}
+                reveal={{ scrollY, tops: topsSV, index: i, pageH: pageHSV, headerBottom }} />
             </View>
           ))}
 

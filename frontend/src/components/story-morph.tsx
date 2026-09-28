@@ -22,10 +22,10 @@ import { StoryHero } from "./story-hero";
 import { StoryMetaChips } from "./story-meta-chips";
 import { StoryInfoGrid } from "./story-info-grid";
 import { HighlightedTitle } from "./highlighted-title";
-import { ReaderIntro, CoverTitle, IntroRect, introCoverSize } from "./reader-intro";
+import { ReaderIntro, CoverTitle, IntroRect, readerCoverFrame } from "./reader-intro";
 import { ReaderAtmosphere } from "./reader-atmosphere";
 import { ReaderFrame } from "./reader-frame";
-import { READER_HEADER_H } from "./reader-header";
+import { CoverNightSkin, CoverSeam } from "./reader-cover-backdrop";
 import { useMorphHost } from "./morph-host";
 
 export type MorphRect = IntroRect;
@@ -43,17 +43,13 @@ const FADE_IN_MS = 240;
 // dell'apertura. Il rientro nella card parte quando lo scorrimento è quasi
 // concluso (70%: resta meno del 3% della strada) per non sembrare due passi.
 const SLIDE_BACK_MS = 220;
-// Frazione della durata dopo la quale la corsa (ease-out cubico) è visivamente
-// conclusa — resta lo 0,3% della strada, meno di mezzo pixel: da qui il lettore
-// vero può montarsi sotto senza che un fotogramma perso si veda.
-const COMMIT_AT = 0.85;
 // Ritorno: attesa massima perché la Home, tornata sotto il livello, abbia il
 // layout definitivo (es. la card "riprendi" che compare e restringe il mazzo);
 // poi si misura la card reale e vi si rientra. Se la Home tace, si parte comunque.
 const HOME_SETTLE_MAX_MS = 240;
 // Geometria della card Home (home-story-card): bordo, padding di badge e titolo,
 // larghezza del tasto cuffie (44 + gap 10), raggio della card e della copertina.
-const CARD_BORDER = 1, CARD_PAD = 16, CHIP_INSET = 14, CHIP_H = 28, LISTEN_W = 54, CARD_RADIUS = 19, COVER_RADIUS = 26;
+const CARD_BORDER = 1, CARD_PAD = 16, CHIP_INSET = 14, CHIP_H = 28, LISTEN_W = 54, CARD_RADIUS = 19;
 const sameRect = (a: MorphRect, b: MorphRect) =>
   Math.abs(a.x - b.x) < 0.5 && Math.abs(a.y - b.y) < 0.5 && Math.abs(a.width - b.width) < 0.5 && Math.abs(a.height - b.height) < 0.5;
 const CLAMP = Extrapolation.CLAMP;
@@ -91,15 +87,14 @@ export function StoryMorph({ story, from: fromProp, premium, ready, onCommit, di
   const slideX = useSharedValue(offsetX);
   const still = useSharedValue(0);
 
-  // Stessa geometria dell'apertura del lettore (deep-dive/[id]): copertina
-  // sotto la barra, dimensione fissa (non dipende da misure della scheda).
-  const headerBottom = insets.top + spacing.xs + READER_HEADER_H;
-  const coverTop = headerBottom + spacing.sm;
-  const size = introCoverSize(winW, winH);
-  const cardW = size.width;
-  const cardH = size.height;
+  // Stessa geometria dell'apertura del lettore (deep-dive/[id]): copertina a
+  // tutta larghezza dall'alto, dimensione fissa (non dipende da misure della scheda).
+  const cover = readerCoverFrame(winW, winH);
+  const coverTop = cover.top;
+  const cardW = cover.width;
+  const cardH = cover.height;
   const [sheetMeasured, setSheetMeasured] = useState(false);
-  const to: MorphRect = { x: size.left, y: coverTop, width: cardW, height: cardH };
+  const to: MorphRect = { x: cover.left, y: coverTop, width: cardW, height: cardH };
 
   // Dove atterrano titolo e griglia: misurati sui segnaposto della scheda. Quando
   // la card cambia altezza la scheda si sposta senza un nuovo onLayout: la scheda
@@ -159,16 +154,15 @@ export function StoryMorph({ story, from: fromProp, premium, ready, onCommit, di
   // Il livello se ne va: la rete di sicurezza non deve colpire un livello successivo (es. il ritorno).
   useEffect(() => () => { if (safetyDismiss.current) clearTimeout(safetyDismiss.current); }, []);
   // Apertura: parte appena si sa dove atterrano titolo e griglia. Il lettore
-  // vero si monta solo quando la corsa è visivamente conclusa (COMMIT_AT:
-  // resta meno di mezzo pixel di strada) e la storia è in cache: il montaggio
-  // — il lavoro più pesante — non può togliere fotogrammi a nulla che si muove.
+  // vero si monta solo quando la corsa è FINITA (e la storia è in cache): il
+  // montaggio — il lavoro più pesante — non può togliere fotogrammi a nulla
+  // che si muove. Nel frattempo il livello mostra già la schermata finale,
+  // identica al lettore: nessuna attesa visibile, poi la dissolvenza.
   useEffect(() => {
     if (closing || !measured || started.current) return;
     started.current = true;
     const finishOpen = () => { animDoneRef.current = true; setAnimDone(true); };
     p.value = withTiming(1, { duration: MORPH_DURATION, easing: MORPH_EASING }, (done) => { if (done) runOnJS(finishOpen)(); });
-    const early = setTimeout(() => { if (dataReadyRef.current) commitOpen.current(); }, MORPH_DURATION * COMMIT_AT);
-    return () => clearTimeout(early);
   }, [closing, measured, p]);
   useEffect(() => {
     if (closing || !animDone || !dataReadyRef.current) return;
@@ -243,7 +237,7 @@ export function StoryMorph({ story, from: fromProp, premium, ready, onCommit, di
     const sx = lerp(p.value, coverScale.x, 1);
     const sy = lerp(p.value, coverScale.y, 1);
     return {
-      borderRadius: lerp(p.value, CARD_RADIUS, COVER_RADIUS),
+      borderRadius: lerp(p.value, CARD_RADIUS, cover.radius),
       transform: [{ translateX: coverShift.x * (1 - p.value) }, { translateY: coverShift.y * (1 - p.value) }, { scaleX: sx }, { scaleY: sy }],
     };
   });
@@ -277,24 +271,27 @@ export function StoryMorph({ story, from: fromProp, premium, ready, onCommit, di
     <Animated.View style={[StyleSheet.absoluteFill, veilStyle]} testID="story-morph">
       {/* Fondo del lettore: compare mentre la Home fa spazio. */}
       <Animated.View style={[StyleSheet.absoluteFill, bgStyle]} pointerEvents="none">
-        <ReaderAtmosphere story={story} animated={false} />
+        <ReaderAtmosphere animated={false} />
       </Animated.View>
+      {/* Raccordo sotto la copertina, identico al lettore: compare con la pelle "lettura". */}
+      <Animated.View style={[StyleSheet.absoluteFill, readerSkin]} pointerEvents="none"><CoverSeam top={cover.height} /></Animated.View>
 
       {/* Tutto ciò che "è" la schermata (scheda, copertina, titolo, badge) può
           arrivare spostato da uno swipe e rientra al suo posto durante il ritorno. */}
       <Animated.View style={[StyleSheet.absoluteFill, slide]}>
       {/* Apertura identica al lettore: titolo e riga info sono segnaposto invisibili. */}
       <View style={[styles.page, { width: winW, height: winH, paddingTop: coverTop }]} pointerEvents="none">
-        <ReaderIntro story={story} coverH={cardH} minHeight={winH - coverTop} bottomInset={insets.bottom} reveal={still} prefix="story-morph"
+        <ReaderIntro story={story} coverH={cover.reserve} minHeight={winH - coverTop} bottomInset={insets.bottom} reveal={still} prefix="story-morph"
           ghost={floatingReady} partsStyle={partsStyle}
           onLayout={() => setSheetMeasured(true)} remeasure={cardH} onTitleRect={acceptTitle} onGridRect={acceptGrid} />
       </View>
 
-      {/* Copertina: ferma al suo posto, cresce fino alla cornice del lettore. */}
+      {/* Copertina: ferma al suo posto, cresce fino alla cornice del lettore (a tutta larghezza). */}
       <Animated.View style={[styles.cover, { left: to.x, top: to.y, width: to.width, height: to.height }, coverStyle]} testID="story-morph-cover">
         <Animated.View style={[StyleSheet.absoluteFill, coverImageStyle]}>
           <StoryHero story={story} style={StyleSheet.absoluteFill} iconSize={64} transition={0} />
-          <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: colors.nightTint }, readerSkin]} />
+          {/* Pelle "lettura": tinta notte e dissolvenza in basso nell'atmosfera, come nel lettore. */}
+          <Animated.View style={[StyleSheet.absoluteFill, readerSkin]}><CoverNightSkin /></Animated.View>
         </Animated.View>
         <Animated.View style={[StyleSheet.absoluteFill, homeSkin]}>
           <LinearGradient colors={[withAlpha(colors.artworkSurface, 0.62), withAlpha(colors.artworkSurface, 0)]} locations={[0, 1]} style={styles.topScrim} />
@@ -302,7 +299,6 @@ export function StoryMorph({ story, from: fromProp, premium, ready, onCommit, di
             locations={[0, 0.42, 0.74, 1]} style={StyleSheet.absoluteFill} />
         </Animated.View>
         <Animated.View style={[StyleSheet.absoluteFill, styles.homeEdge, homeSkin]} />
-        <Animated.View style={[StyleSheet.absoluteFill, styles.readerEdge, readerSkin]} />
       </Animated.View>
       {premium ? (
         <Animated.View style={[styles.listen, { left: from.x + from.width - inset - 44, top: from.y + from.height - inset - 44 }, homeSkin]} pointerEvents="none">
@@ -347,7 +343,6 @@ const useStyles = makeStyles((colors) => ({
   cover: { position: "absolute", overflow: "hidden", backgroundColor: colors.surfaceSecondary },
   topScrim: { position: "absolute", top: 0, left: 0, right: 0, height: "30%" },
   homeEdge: { borderWidth: 1, borderColor: withAlpha(colors.cyanSoft, 0.42) },
-  readerEdge: { borderWidth: 1, borderColor: withAlpha(colors.onGradient, 0.18) },
   listen: {
     position: "absolute", width: 44, height: 44, borderRadius: 24,
     borderWidth: 1, borderColor: colors.glassBorderStrong, backgroundColor: colors.scrim, alignItems: "center", justifyContent: "center",
