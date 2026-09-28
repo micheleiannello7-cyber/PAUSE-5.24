@@ -10,6 +10,7 @@ import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
+import * as Haptics from "expo-haptics";
 
 import { api } from "@/src/api";
 import { makeStyles, useTheme, spacing, ThemeColors } from "@/src/theme";
@@ -170,30 +171,34 @@ export default function DeepDive() {
   // Autocentraggio dei capitoli: quando lo scorrimento si ferma vicino
   // all'inizio di una sezione (apertura, capitolo, fine), la pagina si allinea
   // da sola con quell'inizio sotto la barra — la lettura è sempre "centrata"
-  // sul capitolo. Raggio breve (≈ un quinto di schermata): mai un salto che
-  // porti via testo non ancora letto, solo un aggiustamento morbido.
+  // sul capitolo. Raggio ampio ma asimmetrico: in avanti un po' più corto
+  // (non porta via troppo testo non ancora letto), indietro più generoso.
+  // Sul telefono l'allineamento è accompagnato da un tocco tattile leggerissimo.
   const pageHRef = useRef(winH);
   const maxYRef = useRef(0);
   const snapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const snapNear = useCallback((y: number) => {
     const tops = topsRef.current;
     const targets = [0, ...tops.filter((t) => t > 0).map((t) => Math.max(0, t - headerBottom + spacing.sm))];
-    const radius = Math.min(200, pageHRef.current * 0.22);
-    let best = -1, bestDist = radius;
+    const h = pageHRef.current;
+    const forward = Math.min(320, h * 0.36), backward = Math.min(380, h * 0.44);
+    let best = -1, bestDist = Number.POSITIVE_INFINITY;
     for (const target of targets) {
       const d = Math.abs(y - target);
-      if (d < bestDist) { best = target; bestDist = d; }
+      const radius = target > y ? forward : backward;
+      if (d < radius && d < bestDist) { best = target; bestDist = d; }
     }
     if (best < 0 || bestDist < 1.5) return;
     if (maxYRef.current > 0 && best > maxYRef.current) return;
     autoY.value = best;
     scrollRef.current?.scrollTo({ y: best, animated: true });
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
   }, [headerBottom, scrollRef, autoY]);
   // Sul web non arrivano gli eventi di fine scorrimento: si aspetta che lo
-  // scroll resti fermo per un attimo.
+  // scroll resti fermo per un attimo brevissimo.
   const scheduleSnap = useCallback((y: number) => {
     if (snapTimer.current) clearTimeout(snapTimer.current);
-    snapTimer.current = setTimeout(() => snapNear(y), 170);
+    snapTimer.current = setTimeout(() => snapNear(y), 90);
   }, [snapNear]);
   useEffect(() => () => { if (snapTimer.current) clearTimeout(snapTimer.current); }, []);
 

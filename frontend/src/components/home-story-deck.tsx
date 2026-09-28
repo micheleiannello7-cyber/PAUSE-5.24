@@ -107,7 +107,6 @@ export function HomeStoryDeck({ deck, cursor, width, height, onChange, onOpen, o
     cancelAnimation(nudge);
     nudge.value = 0;
     armIdle();
-    Haptics.selectionAsync().catch(() => {});
     runOnUI(commit)(direction);
     finish(target, virtualPage + direction);
   }, [cursor, deck.length, virtualPage, commit, finish, nudge, armIdle]);
@@ -148,7 +147,8 @@ export function HomeStoryDeck({ deck, cursor, width, height, onChange, onOpen, o
             return <StoryLayer key={`${virtualPage + slot}-${story.id}`} story={story} slot={slot} page={virtualPage + slot}
               width={cardWidth} left={(width - cardWidth) / 2} stride={stride} position={position} tx={tx} nudge={nudge} travel={travel}
               register={slot === 0 ? registerActive : undefined}
-              onOpen={(rect) => { if (!dragged.value) onOpen(story, rect); }}
+              // Tocco tattile leggerissimo solo quando si sceglie una storia, mai scorrendo il mazzo.
+              onOpen={(rect) => { if (dragged.value) return; Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); onOpen(story, rect); }}
               onListen={onListen ? () => { if (!dragged.value) onListen(story); } : undefined} />;
           })}
         </View>

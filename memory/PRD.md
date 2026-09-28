@@ -316,3 +316,8 @@ Solo presentazione (nessuna modifica backend/contenuti):
 - `deep-dive/[id].tsx`: `snapNear(y)` — a fine scorrimento (web debounce 170ms; nativo onEndDrag/onMomentumEnd) la pagina si allinea all'inizio della sezione più vicina entro min(200, 22% pagina). iteration_4 9/9 PASS.
 - `reader-section.tsx`: corpo del capitolo successivo invisibile e 44pt più in basso; appare e sale verso il titolo mentre il capitolo si avvicina (dist 0.66h→0.24h). iteration_5 PASS.
 - `topic-picker.tsx`: riquadro hint con due righe separate (pallino-icona ciascuna + divisore). iteration_5 PASS.
+
+## Autocentraggio rapido + haptics mirati (giugno 2026, fork)
+- `deep-dive/[id].tsx`: debounce web 90ms; raggio asimmetrico forward min(320, 36%h) / backward min(380, 44%h); `Haptics.impactAsync(Light)` solo nativo allo snap.
+- `home-story-deck.tsx`: nessuna vibrazione allo swipe del mazzo; haptic Light solo al tocco che apre una storia.
+- Test: iteration_6.json tutto PASS.
