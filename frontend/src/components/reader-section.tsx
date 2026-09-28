@@ -92,11 +92,13 @@ export function ChapterSection({ chapter, story, eyebrow, reveal }: { chapter: C
     const h = Math.max(1, pageH.value);
     return { opacity: r ? interpolate(dist.value, [h * 0.32, h * 0.72], [1, 0.42], Extrapolation.CLAMP) : 1 };
   });
+  // Il paragrafo compare appena il capitolo si avvicina e, mentre appare,
+  // sale morbidamente verso il suo titolo (parte ~44 pt più in basso).
   const body = useAnimatedStyle(() => {
     const h = Math.max(1, pageH.value);
     return {
-      opacity: r ? interpolate(dist.value, [h * 0.26, h * 0.56], [1, 0], Extrapolation.CLAMP) : 1,
-      transform: [{ translateY: r ? interpolate(dist.value, [h * 0.26, h * 0.56], [0, 14], Extrapolation.CLAMP) : 0 }],
+      opacity: r ? interpolate(dist.value, [h * 0.28, h * 0.62], [1, 0], Extrapolation.CLAMP) : 1,
+      transform: [{ translateY: r ? interpolate(dist.value, [h * 0.24, h * 0.66], [0, 44], Extrapolation.CLAMP) : 0 }],
     };
   });
   return (

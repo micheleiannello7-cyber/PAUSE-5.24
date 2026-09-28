@@ -311,3 +311,8 @@ Solo presentazione (nessuna modifica backend/contenuti):
 - Argomenti/onboarding (`topic-picker.tsx`): titolo su una riga (font da larghezza misurata), nota "Nessuna scelta è definitiva" integrata nel riquadro hint; footer rimosso. i18n onb_title senza a capo.
 - Home (`home-controls.tsx`): tessere categoria con vetro + `CategoryTileEdge active` come in Argomenti.
 - Test: iteration_3.json 4/4 PASS.
+
+## Autocentraggio capitoli + reveal fluido + hint a due righe (giugno 2026, fork)
+- `deep-dive/[id].tsx`: `snapNear(y)` — a fine scorrimento (web debounce 170ms; nativo onEndDrag/onMomentumEnd) la pagina si allinea all'inizio della sezione più vicina entro min(200, 22% pagina). iteration_4 9/9 PASS.
+- `reader-section.tsx`: corpo del capitolo successivo invisibile e 44pt più in basso; appare e sale verso il titolo mentre il capitolo si avvicina (dist 0.66h→0.24h). iteration_5 PASS.
+- `topic-picker.tsx`: riquadro hint con due righe separate (pallino-icona ciascuna + divisore). iteration_5 PASS.

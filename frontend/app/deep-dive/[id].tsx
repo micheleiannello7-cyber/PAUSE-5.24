@@ -167,6 +167,36 @@ export default function DeepDive() {
     if (!jumpTo(i, animated)) pendingSection.current = { index: i, animated };
   }, [jumpTo]);
 
+  // Autocentraggio dei capitoli: quando lo scorrimento si ferma vicino
+  // all'inizio di una sezione (apertura, capitolo, fine), la pagina si allinea
+  // da sola con quell'inizio sotto la barra — la lettura è sempre "centrata"
+  // sul capitolo. Raggio breve (≈ un quinto di schermata): mai un salto che
+  // porti via testo non ancora letto, solo un aggiustamento morbido.
+  const pageHRef = useRef(winH);
+  const maxYRef = useRef(0);
+  const snapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const snapNear = useCallback((y: number) => {
+    const tops = topsRef.current;
+    const targets = [0, ...tops.filter((t) => t > 0).map((t) => Math.max(0, t - headerBottom + spacing.sm))];
+    const radius = Math.min(200, pageHRef.current * 0.22);
+    let best = -1, bestDist = radius;
+    for (const target of targets) {
+      const d = Math.abs(y - target);
+      if (d < bestDist) { best = target; bestDist = d; }
+    }
+    if (best < 0 || bestDist < 1.5) return;
+    if (maxYRef.current > 0 && best > maxYRef.current) return;
+    autoY.value = best;
+    scrollRef.current?.scrollTo({ y: best, animated: true });
+  }, [headerBottom, scrollRef, autoY]);
+  // Sul web non arrivano gli eventi di fine scorrimento: si aspetta che lo
+  // scroll resti fermo per un attimo.
+  const scheduleSnap = useCallback((y: number) => {
+    if (snapTimer.current) clearTimeout(snapTimer.current);
+    snapTimer.current = setTimeout(() => snapNear(y), 170);
+  }, [snapNear]);
+  useEffect(() => () => { if (snapTimer.current) clearTimeout(snapTimer.current); }, []);
+
   const onScroll = useAnimatedScrollHandler({
     onScroll: (e) => {
       const y = e.contentOffset.y;
@@ -175,6 +205,7 @@ export default function DeepDive() {
         touchedSV.value = true;
         runOnJS(markTouched)();
       }
+      if (Platform.OS === "web") runOnJS(scheduleSnap)(y);
       // Titolo grande sotto la barra → si attenua; la barra diventa vetro quando la copertina è quasi uscita.
       const titleTop = bigTitleSV.value - headerBottom;
       headerReveal.value = interpolate(y, [titleTop - 40, titleTop + 48], [0, 1], Extrapolation.CLAMP);
@@ -193,12 +224,22 @@ export default function DeepDive() {
         runOnJS(setSection)(idx);
       }
     },
+    // Nativo: fine dello scorrimento (rilascio senza slancio, o fine dello slancio) → autocentraggio.
+    onEndDrag: (e) => {
+      if (Platform.OS === "web") return;
+      if (Math.abs(e.velocity?.y ?? 0) < 0.05) runOnJS(snapNear)(e.contentOffset.y);
+    },
+    onMomentumEnd: (e) => {
+      if (Platform.OS === "web") return;
+      runOnJS(snapNear)(e.contentOffset.y);
+    },
   });
 
   const onScrollLayout = (e: LayoutChangeEvent) => {
     const h = Math.round(e.nativeEvent.layout.height);
-    if (h > 0 && h !== pageH) { setPageH(h); pageHSV.value = h; }
+    if (h > 0 && h !== pageH) { setPageH(h); pageHSV.value = h; pageHRef.current = h; }
   };
+  const onContentSizeChange = (_w: number, h: number) => { maxYRef.current = Math.max(0, h - pageHRef.current); };
   // Apertura diretta su un capitolo (`start=1`): posiziona senza animazione.
   const startedAtChapter = useRef(false);
   useEffect(() => {
@@ -353,6 +394,7 @@ export default function DeepDive() {
           scrollEventThrottle={16}
           onScrollBeginDrag={markTouched}
           onLayout={onScrollLayout}
+          onContentSizeChange={onContentSizeChange}
           contentContainerStyle={{ paddingTop: cover.top }}
           showsVerticalScrollIndicator={false}
           style={styles.scroll}
